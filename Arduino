@@ -1,0 +1,60 @@
+int sensorPin = A0;
+int sensorValue = 0;
+int lastSensorValue = 0;  // 儲存上一次的感測器數值
+int buttonPin = 2;  // D2腳位設定為按鈕輸入
+int buttonState = 0;  // 儲存按鈕狀態
+int lastButtonState = HIGH;  // 儲存上一次的按鈕狀態
+bool isButtonMode = true;  // 追蹤當前模式，true為按鈕模式，false為可變電阻模式
+int toggleState = 0;  // 追蹤按鈕的切換狀態（0或1）
+int ledPin = 9;  // PWM腳位，用於控制LED
+
+void setup() {
+  // initialize serial communication at 9600 bits per second:
+  Serial.begin(9600);
+  pinMode(buttonPin, INPUT_PULLUP);  // 設定D2為上拉式輸入
+  pinMode(ledPin, OUTPUT);  // 設定LED腳位為輸出
+  lastSensorValue = analogRead(sensorPin);  // 初始化感測器數值
+}
+
+void loop() {
+  // read the sensor value and map it to 10-500:
+  sensorValue = map(analogRead(sensorPin), 0, 1023, 10, 500);
+  
+  // 讀取按鈕狀態
+  buttonState = digitalRead(buttonPin);
+  
+  // 檢查感測器數值是否有明顯變化（變化超過10）
+  if (abs(sensorValue - lastSensorValue) > 10) {
+    isButtonMode = false;  // 切換到可變電阻模式
+  }
+  
+  // 檢查按鈕是否被按下
+  if (buttonState == LOW && lastButtonState == HIGH) {
+    isButtonMode = true;  // 切換到按鈕模式
+    toggleState = !toggleState;  // 切換按鈕狀態（0變1，1變0）
+    delay(50);  // 消除彈跳
+  }
+  
+  // 更新上一次的狀態
+  lastButtonState = buttonState;
+  lastSensorValue = sensorValue;
+  
+  // 根據當前模式輸出不同的資訊
+  if (isButtonMode) {
+    // 按鈕模式：顯示按鈕狀態（0或1）
+    Serial.print("按鈕模式 - 狀態: ");
+    Serial.println(toggleState);
+    // 在按鈕模式下，LED亮度根據按鈕狀態設定
+    analogWrite(ledPin, toggleState * 255);
+  } else {
+    // 可變電阻模式：顯示感測器數值（10-500）
+    Serial.print("可變電阻模式 - 數值: ");
+    Serial.println(sensorValue);
+    // 在可變電阻模式下，LED亮度根據感測器數值設定
+    analogWrite(ledPin, map(sensorValue, 10, 500, 0, 255));
+    toggleState = 0;  // 切換到可變電阻模式時重置按鈕狀態為0
+  }
+  
+  // wait a bit for the next reading:
+  delay(100);
+}
