@@ -1,0 +1,70 @@
+/*
+ * Neo_Seasons
+ * Version: 1.0.0
+ * Last Updated: 2025/04/28
+ * 
+ * 一個使用聲音感測器和按鈕控制的互動式裝置
+ */
+
+// 定義腳位
+const int leftButtonPin = 2;    // 左按鈕接D2
+const int rightButtonPin = 4;   // 右按鈕接D4
+const int potPin = A1;         // 可變電阻接A1
+const int soundSensorPin = A0;  // 聲音感測器類比輸入接A0
+const int ledPin = 3;          // LED接D3
+
+// 儲存各元件狀態
+int leftButtonState = 0;
+int rightButtonState = 0;
+int potValue = 0;
+int soundAnalogValue = 0;
+
+void setup() {
+  // 初始化序列通訊，設定鮑率為9600
+  Serial.begin(9600);
+  
+  // 設定輸入輸出腳位
+  pinMode(leftButtonPin, INPUT_PULLUP);
+  pinMode(rightButtonPin, INPUT_PULLUP);
+  pinMode(ledPin, OUTPUT);
+}
+
+void loop() {
+  // 讀取所有感測器數值
+  leftButtonState = digitalRead(leftButtonPin);
+  rightButtonState = digitalRead(rightButtonPin);
+  potValue = analogRead(potPin);
+  
+  // 印出可變電阻數值
+  Serial.print("可變電阻數值: ");
+  Serial.println(potValue);
+  
+  // 檢查按鈕狀態來控制聲音偵測
+  if (leftButtonState == LOW || rightButtonState == LOW) {  // 當任一按鈕被按住時
+    if (leftButtonState == LOW) {
+      Serial.println("左按鈕被按下");
+    }
+    if (rightButtonState == LOW) {
+      Serial.println("右按鈕被按下");
+    }
+    
+    // 偵測聲音 - 讀取多次取平均值以提高靈敏度
+    int sumSound = 0;
+    for(int i = 0; i < 10; i++) {
+      sumSound += analogRead(soundSensorPin);
+      delay(1);  // 短暫延遲以避免讀取過快
+    }
+    soundAnalogValue = sumSound / 10;
+    
+    // 印出聲音感測器數值
+    Serial.print("聲音感測器數值(A0): ");
+    Serial.println(soundAnalogValue);
+  }
+  
+  // 將可變電阻的數值(0-1023)映射到LED亮度(0-255)
+  int brightness = map(potValue, 0, 1023, 0, 255);
+  analogWrite(ledPin, brightness);
+  
+  // 延遲一段時間再進行下一次讀取
+  delay(100);  // 縮短延遲時間以提高回應速度
+}
